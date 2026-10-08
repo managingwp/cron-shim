@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class IngestService
 {
+    public function __construct(private HealthEvaluator $health) {}
+
     /**
      * Persist a run report idempotently.
      *
@@ -29,7 +31,7 @@ class IngestService
             return ['run' => $existing, 'duplicate' => true];
         }
 
-        return DB::transaction(function () use ($site, $payload, $run, $runUuid, $sourceIp): array {
+        $result = DB::transaction(function () use ($site, $payload, $run, $runUuid, $sourceIp): array {
             $cronRun = $site->runs()->create([
                 'run_uuid' => $runUuid,
                 'started_at' => $run['started_at'] ?? null,
@@ -54,6 +56,10 @@ class IngestService
 
             return ['run' => $cronRun, 'duplicate' => false];
         });
+
+        $this->health->recordRun($site, $result['run']);
+
+        return $result;
     }
 
     /**

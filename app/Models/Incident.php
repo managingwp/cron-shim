@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'site_id', 'type', 'status', 'opened_at', 'resolved_at',
+    'site_id', 'type', 'status', 'opened_at', 'resolved_at', 'acknowledged_at',
     'details', 'last_notified_at', 'notify_count',
 ])]
 class Incident extends Model
@@ -32,6 +32,7 @@ class Incident extends Model
             'status' => IncidentStatus::class,
             'opened_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'acknowledged_at' => 'datetime',
             'details' => 'array',
             'last_notified_at' => 'datetime',
             'notify_count' => 'integer',

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SiteController;
@@ -26,4 +27,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/runs', [RunController::class, 'index'])->name('runs.index');
     Route::get('/runs/{run}', [RunController::class, 'show'])->name('runs.show');
     Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
+
+    Route::get('/incidents', [IncidentController::class, 'index'])->name('incidents.index');
+    Route::post('/incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
+    Route::post('/incidents/{incident}/acknowledge', [IncidentController::class, 'acknowledge'])->name('incidents.acknowledge');
 });
