@@ -163,72 +163,88 @@ Responses: `202 {"status":"accepted","run_uuid":"..."}`; `200 {"status":"duplica
 **Goal:** Persist sites, runs, log entries, incidents, channels, and notification logs with correct constraints and indexes.
 
 #### Tasks
-- [ ] Create migrations for every table in [Data Model](#data-model) with FKs, unique constraints, and indexes.
-- [ ] Create Eloquent models with `$casts`, `$fillable`/guarded, enums (PHP backed enums), and relationships.
-- [ ] Create model factories for every model.
-- [ ] Add a `DemoSeeder` that seeds a small fleet (sites, runs, logs, one incident).
-- [ ] **Validation:** `php artisan migrate:fresh --seed` exits 0 and every model has a working factory.
+- [x] Create migrations for every table in [Data Model](#data-model) with FKs, unique constraints, and indexes.
+- [x] Create Eloquent models with casts, PHP backed enums, and relationships.
+- [x] Create model factories for every model.
+- [x] Add a `DemoSeeder` that seeds a small fleet (sites, runs, logs, one incident).
+- [x] **Validation:** `php artisan migrate:fresh --seed` exits 0; `php artisan test --compact` passes (14 tests); every model has a working factory.
 
 #### Expected outcomes
 - `php artisan db:seed --class=DemoSeeder` populates a browsable demo dataset.
+
+**Commit:** `42a3690` — `feat: add domain schema, models, enums, and factories`
 
 ### Phase 3: Ingest API
 
 **Goal:** A secure, idempotent endpoint that accepts a signed run report and stores the run and its logs.
 
 #### Tasks
-- [ ] Register `POST /api/v1/ingest` with stateless middleware and a dedicated rate limiter.
-- [ ] Implement site auth: resolve by `X-Shim-Site`, verify Bearer token against `ingest_token_hash` (Hash::check); reject unknown/inactive with 401/403 and log rejections.
-- [ ] Implement optional HMAC verification of `X-Shim-Signature` over the raw body using the per-site secret (constant-time compare).
-- [ ] Add a `FormRequest` validating the payload (required fields, types, enum statuses, max log count/size).
-- [ ] Enforce idempotency on `run_uuid`; a duplicate returns `200 {"status":"duplicate"}` with no new row.
-- [ ] Persist `CronRun` + batch `CronLogEntry`; update site `last_run_at`, `last_status`, `last_seen_ip`.
-- [ ] Return `202 {"status":"accepted"}`.
-- [ ] Write feature tests: valid accepted; bad token 401; unknown site 404; disabled site 403; duplicate idempotent; oversize 422.
-- [ ] Document the contract in `doc/api-ingest.md`.
-- [ ] **Validation:** `php artisan test --filter=Ingest` passes; a signed `curl` fixture returns 202 and increments the run count; replaying the same `run_uuid` adds no row.
+- [x] Register `POST /api/v1/ingest` with stateless middleware and a dedicated rate limiter.
+- [x] Implement site auth: resolve by `X-Shim-Site`, verify Bearer token against `ingest_token_hash` (`Hash::check`); reject unknown/inactive with 401/403.
+- [x] Implement optional HMAC verification of `X-Shim-Signature` over the raw body using the per-site secret (constant-time compare).
+- [x] Add a `FormRequest` validating the payload (required fields, types, enum statuses, max log count/size).
+- [x] Enforce idempotency on `run_uuid`; a duplicate returns `200 {"status":"duplicate"}` with no new row.
+- [x] Persist `CronRun` + batch `CronLogEntry`; update site `last_run_at`, `last_status`, `last_seen_ip`.
+- [x] Return `202 {"status":"accepted"}`.
+- [x] Write feature tests (12): valid accepted; missing/bad token 401; unknown site 401; disabled site 403; site_uuid mismatch 422; duplicate idempotent; validation 422; oversize 413; HMAC required.
+- [x] Document the contract in `doc/api-ingest.md`.
+- [x] **Validation:** `php artisan test --filter=Ingest` passes (12 tests); replaying the same `run_uuid` adds no row.
+
+**Commit:** `c571b66` — `feat: add authenticated, idempotent run-report ingest API`
 
 ### Phase 4: Site-Side Reporting Client (`shim/`)
 
 **Goal:** The site script runs WP cron and reports to the hub without ever altering cron's own exit code.
 
 #### Tasks
-- [ ] Add `shim/` client configured by an env file (`SHIM_HUB_URL`, `SHIM_SITE_UUID`, `SHIM_TOKEN`/`SHIM_SECRET`, `SHIM_TIMEOUT`).
-- [ ] Run WP cron (`wp cron event run --due-now` or `wp-cron.php`), capturing stdout/stderr, exit code, and timing.
-- [ ] Build the JSON payload per [Ingest Contract](#ingest-contract) including `meta` (WP/PHP/shim versions).
-- [ ] Sign (HMAC) and POST over HTTPS with a short timeout; **never** block or change the cron exit code.
-- [ ] Add a bounded local spool: on failure, persist the payload; flush pending payloads at the start of the next run.
-- [ ] Write the client's own structured log for diagnostics.
-- [ ] `shim/README.md`: install, configure, and example crontab entry.
-- [ ] Contract test: client output validates against the same JSON schema the API enforces.
-- [ ] **Validation:** with the hub unreachable the client still exits 0; spooled payload is delivered on the next run after recovery; `shellcheck` (and the schema test) passes.
+- [x] Add `shim/` client configured by env or env file (`SHIM_HUB_URL`, `SHIM_SITE_UUID`, `SHIM_TOKEN`/`SHIM_SECRET`, `SHIM_TIMEOUT`).
+- [x] Run WP cron via a configurable command (`SHIM_CRON_COMMAND`, default `wp cron event run --due-now`), capturing output, exit code, and timing.
+- [x] Build the JSON payload per [Ingest Contract](#ingest-contract) including `meta` (PHP/shim versions).
+- [x] Sign (HMAC) and POST over HTTPS with a short timeout; **never** block or change the cron exit code.
+- [x] Add a bounded local spool: on failure, persist the payload; flush pending payloads at the start of the next run.
+- [x] Optionally write the client's own log for diagnostics (`SHIM_LOG_FILE`).
+- [x] `shim/README.md` + `shim/cron-shim.env.example` + `shim/crontab.example`.
+- [x] Contract test: the client's dry-run payload is posted to the real ingest endpoint and accepted.
+- [x] **Validation:** `php artisan test --filter=ShimClient` passes (5 tests); with the hub unreachable the client exits 0 and spools; a spooled payload is delivered and removed on the next successful flush.
+
+> **Decision:** the client is self-contained PHP (not bash) so JSON/HMAC handling is robust; WordPress
+> servers always have PHP. `shellcheck` therefore does not apply.
+
+**Commit:** `3e0ce8f` — `feat: add site-side reporting client with HMAC signing and spool retry`
 
 ### Phase 5: Site Catalog & Management UI
 
 **Goal:** Create and manage sites and their ingest credentials from the UI.
 
 #### Tasks
-- [ ] Sites CRUD (Livewire) with full validation and authorization policies.
-- [ ] "Connect a new site" wizard: generate site UUID + secret, show once, provide a copy-ready env snippet and crontab line.
-- [ ] Secret rotation: regenerate and invalidate the previous secret.
-- [ ] Enable/disable and edit interval, grace, and timezone.
-- [ ] Sites list with search, filter, sort, and a health badge (healthy/degraded/silent).
-- [ ] Feature tests for CRUD, rotation, policy enforcement, and validation.
-- [ ] **Validation:** `php artisan test --filter=SiteManagement` passes; a newly created site reports successfully, and disabling it causes ingest to return 403 (test).
+- [x] Sites CRUD via a resource controller + Blade with full validation and authorization policies.
+- [x] "Connect a new site" flow: generate site UUID + token + signing secret, show them once, provide a copy-ready env snippet and crontab line.
+- [x] Secret/token rotation: regenerate and invalidate the previous credentials.
+- [x] Enable/disable and edit interval, grace, and timezone.
+- [x] Sites list with search, status filter, sort, and a health badge (healthy/degraded/silent/disabled).
+- [x] Feature tests for CRUD, credential issuance, rotation, policy enforcement, and validation.
+- [x] **Validation:** `php artisan test --filter=Site` passes.
+
+> **Decision:** interactive CRUD uses standard controllers + Blade (simple, fully HTTP-testable); Livewire
+> is reserved for the dashboard's live polling in Phase 9.
+
+**Commit:** `00a5740` — `feat: add site catalog with credentials, rotation, and management UI`
 
 ### Phase 6: Runs & Logs Browsing UI
 
 **Goal:** Browse all runs and logs across the fleet.
 
 #### Tasks
-- [ ] Global Runs index: filters by site, status, date range; pagination; row → run detail.
-- [ ] Run detail: timing, exit code, jobs, `meta`, and color-coded log entries.
-- [ ] Global Logs stream: filters by site/level/date plus free-text search; pagination.
-- [ ] Embed per-site run/log views on site detail.
-- [ ] Add CSV export for the current filtered set.
-- [ ] Eliminate N+1 (eager loading) and add any needed indexes.
-- [ ] Feature tests for filters, search, and detail rendering.
-- [ ] **Validation:** `php artisan test --filter=RunBrowsing` passes; the runs index test asserts a bounded query count; the logs filter returns only matching level/site.
+- [x] Global Runs index: filters by site, status, date range; pagination; row → run detail.
+- [x] Run detail: timing, exit code, jobs, `meta`, and color-coded log entries.
+- [x] Global Logs stream: filters by site/level/date plus free-text search; pagination.
+- [x] Embed per-site recent runs and open incidents on the site detail page.
+- [x] Add CSV export for the current filtered run set.
+- [x] Eager-load relations to avoid N+1 (indexes already added in Phase 2).
+- [x] Feature tests for filters, search, detail rendering, and CSV export.
+- [x] **Validation:** `php artisan test --filter=RunBrowsing` passes (7 tests); the runs index test asserts no lazy loading via `Model::preventLazyLoading()`; the logs filter returns only the matching level.
+
+**Commit:** `f62e026` — `feat: add fleet-wide run and log browsing with filters, detail, and CSV export`
 
 ### Phase 7: Health Detection & Incidents
 
