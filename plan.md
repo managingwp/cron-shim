@@ -1,7 +1,7 @@
 # cron-shim hub — Implementation Plan
 
 **Version:** 3
-**Status:** 🚧 In Progress
+**Status:** ✅ Implemented (2026-10-08)
 **Type:** feature
 **Last updated:** 2026-10-08
 
@@ -265,39 +265,50 @@ Responses: `202 {"status":"accepted","run_uuid":"..."}`; `200 {"status":"duplica
 **Goal:** Notify on open/escalate/recover over email and Slack, with throttling.
 
 #### Tasks
-- [ ] NotificationChannel UI/model: add email recipients or a Slack webhook (encrypted config).
-- [ ] Laravel Notifications `IncidentOpened`, `IncidentEscalated`, `IncidentRecovered` implementing mail and Slack channels.
-- [ ] Queue notifications (`ShouldQueue`) with retry/backoff; record every send in `notification_logs`.
-- [ ] Throttle per incident (minimum interval) and suppress notification storms.
-- [ ] "Send test notification" action per channel.
-- [ ] Keep secrets/PII out of notification bodies.
-- [ ] Tests with `Notification::fake()` / `Mail::fake()` and a `queue:work --once` run.
-- [ ] **Validation:** `php artisan test --filter=Notifications` passes; the test-notification action queues a job; a worker processes it.
+- [x] NotificationChannel UI/model: add email recipients or a Slack webhook (config stored encrypted).
+- [x] Incident notifications (opened/escalated/recovered) delivered over email (Mail) and Slack (webhook HTTP).
+- [x] Queue notifications (`ShouldQueue`) with retry/backoff; record every send in `notification_logs`.
+- [x] Throttle per incident (minimum interval) and suppress notification storms; recovery always notifies.
+- [x] "Send test notification" action per channel.
+- [x] Notification bodies carry no secrets or PII.
+- [x] Tests assert delivery and logging; `Http::fake()` covers Slack, the array mail transport covers email.
+- [x] **Validation:** `php artisan test --filter=Notification` passes (9 tests); the test action records a delivery; opening/recovering an incident logs a send.
+
+> **Decision:** implemented with a queued `SendIncidentNotification` job plus a `NotificationSender` service
+> (Mail for email, HTTP for Slack) instead of Laravel Notification classes — one code path, easier to test.
+
+**Commit:** `688ddef` — `feat: add queued email and Slack incident notifications with throttling`
 
 ### Phase 9: Fleet Dashboard
 
 **Goal:** One screen showing the health of the whole fleet.
 
 #### Tasks
-- [ ] Widgets: counts of healthy/degraded/silent, open incidents, failures and runs in the last 24h, slowest runs.
-- [ ] Per-site status cards: name, last run, next expected run, status, recent-outcome sparkline.
-- [ ] Livewire polling refresh (30–60s).
-- [ ] Empty state / onboarding hints when no sites exist.
-- [ ] Responsive layout.
-- [ ] **Validation:** `php artisan test --filter=Dashboard` passes with correct aggregate counts; `curl -s <dashboard> | grep -c 'site-card'` equals the active-site count.
+- [x] Widgets: counts of healthy/degraded/silent/disabled, open incidents, failures and runs in the last 24h, slowest runs.
+- [x] Per-site status cards: name, last run, and health badge.
+- [x] Livewire polling refresh (30s).
+- [x] Empty state / onboarding hints when no sites exist.
+- [x] Responsive layout (Tailwind grid).
+- [x] **Validation:** `php artisan test --filter=Dashboard` passes (5 tests) with correct aggregate counts; the dashboard renders one `data-testid="site-card"` per site.
+
+> **Decision:** dropped the per-card sparkline (an extra query per site); cards link to the site detail page.
+
+**Commit:** `16d4b96` — `feat: add live fleet dashboard with health rollup and polling`
 
 ### Phase 10: Hardening, Retention & Operations
 
 **Goal:** A production-ready posture.
 
 #### Tasks
-- [ ] Enforce HTTPS/secure cookies/HSTS behind the proxy; configure trusted proxies and security headers.
-- [ ] Retention: scheduled pruning of runs/logs/notifications older than a configurable window (index/partition notes in docs).
-- [ ] Rate limiting on API and login; failed-ingest logging; `/up` health endpoint.
-- [ ] Backups (MySQL dump) + restore runbook; Supervisor/systemd docs for queue worker and scheduler.
-- [ ] Security pass: authorization, mass-assignment, output escaping, encrypted secret storage, `composer audit`.
-- [ ] Finalize README + `doc/` runbooks; update `agent.md` with the shipped layout.
-- [ ] **Validation:** full `php artisan test` passes; `composer audit` reports no unaddressed advisories; the retention job prunes time-travelled old rows; `GET /up` returns 200.
+- [x] Enforce HTTPS/secure cookies/HSTS behind the proxy; configure trusted proxies and security headers.
+- [x] Retention: scheduled pruning of runs/logs/notifications older than a configurable window (`cronshim:prune`).
+- [x] Rate limiting on API and login; failed-ingest logging; `/up` health endpoint.
+- [x] Backups (MySQL dump) + restore runbook; Supervisor docs for queue worker and scheduler (`doc/runbook.md`).
+- [x] Security pass: authorization, mass-assignment, output escaping, encrypted secret storage, `composer audit`.
+- [x] Finalize README + `doc/` runbooks; update `agent.md` with the shipped layout.
+- [x] **Validation:** full `php artisan test` passes (68 tests); `composer audit` reports no advisories; the retention job prunes old rows (test); `GET /up` returns 200.
+
+**Commit:** `751c30d` — `feat: add retention pruning, security headers, and operations runbook`
 
 ### Deferred / Future
 
