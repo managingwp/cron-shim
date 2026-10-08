@@ -1,0 +1,3 @@
+# Run the cron-shim client every 5 minutes. Adjust to match the interval you
+# configured for the site in the hub. The client never fails the schedule.
+*/5 * * * * www-data /usr/bin/php /usr/local/bin/cron-shim.php --env-file=/etc/cron-shim.env >/dev/null 2>&1
