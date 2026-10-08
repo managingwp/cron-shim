@@ -156,6 +156,8 @@ Responses: `202 {"status":"accepted","run_uuid":"..."}`; `200 {"status":"duplica
 - `php artisan test` passes on the scaffolding.
 - Unauthenticated `GET /` returns 302; after login the dashboard returns 200.
 
+**Commit:** `b27e1b3` — `feat: scaffold Laravel hub with auth, layout, docker stack, and CI`
+
 ### Phase 2: Domain Model & Migrations
 
 **Goal:** Persist sites, runs, log entries, incidents, channels, and notification logs with correct constraints and indexes.
