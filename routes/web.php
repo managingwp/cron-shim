@@ -8,6 +8,7 @@ use App\Http\Controllers\LogController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\Settings\NotificationChannelController;
 use App\Http\Controllers\SiteController;
+use App\Livewire\Dashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -19,7 +20,7 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/dashboard', Dashboard::class)->name('dashboard');
 
     Route::resource('sites', SiteController::class);
     Route::post('/sites/{site}/rotate', [SiteController::class, 'rotate'])->name('sites.rotate');
