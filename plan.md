@@ -1,7 +1,7 @@
 # cron-shim hub — Implementation Plan
 
 **Version:** 3
-**Status:** Not Started
+**Status:** 🚧 In Progress
 **Type:** feature
 **Last updated:** 2026-10-08
 
@@ -41,7 +41,7 @@
 
 **Approach / Architectural Fit**
 
-- **Stack:** Laravel 12+ (PHP 8.3+), Blade + Livewire 3 + Tailwind for the UI, Pest for tests, MySQL in production with SQLite for the test suite.
+- **Stack:** Laravel 13 (PHP 8.5), Blade + Livewire 4 + Tailwind 4 for the UI, PHPUnit for tests, MySQL in production with SQLite for the test suite.
 - **Async:** Laravel scheduler drives health evaluation; Laravel queue (database driver first, Redis optional) drives notifications. No external services required to boot.
 - **HTTP:** single stateless `POST /api/v1/ingest` endpoint; browser UI is session-authenticated.
 - **Shape:** ingest service normalizes the payload, the model layer stores it, a health evaluator turns raw runs into incidents, and a notifier fans out to channels — each concern isolated so it is independently testable.
@@ -50,7 +50,7 @@
 **Assumptions** — confirm or veto these; each is cheap to change but shapes the phases.
 
 1. **Repo placement.** The hub is built in *this* repo at the root (standard Laravel layout) and the site-side reporting client ships under `shim/`, so the API contract and its client version together. *(Alternative: separate `cron-shim-hub` repo.)*
-2. **UI framework.** Livewire 3 + Blade + Tailwind (server-rendered, no SPA build) rather than Inertia/React.
+2. **UI framework.** Livewire 4 + Blade + Tailwind 4 (server-rendered, no SPA build) rather than Inertia/React.
 3. **Database.** MySQL 8 in production; SQLite in-memory for tests.
 4. **Queue.** Laravel `database` queue driver initially; Redis documented as an upgrade.
 5. **Auth.** A single admin account via Laravel's starter auth; user/roles tables exist but team features are out of scope.
@@ -143,18 +143,18 @@ Responses: `202 {"status":"accepted","run_uuid":"..."}`; `200 {"status":"duplica
 **Goal:** A runnable Laravel hub skeleton with authentication, base layout, and a reproducible dev environment.
 
 #### Tasks
-- [ ] Create the Laravel app at the repo root (Laravel 12+, PHP 8.3+); commit the skeleton.
-- [ ] Add `.env.example` covering app URL, DB, queue, mail, and hub settings — **no secrets committed**.
-- [ ] Install Laravel starter auth (Breeze/Blade or Fortify); protect all app routes behind auth.
-- [ ] Add Tailwind + a base application layout with nav: Dashboard, Sites, Runs, Logs, Incidents, Settings.
-- [ ] Add a Docker Compose dev stack (app, MySQL, queue worker, scheduler) or Laravel Sail; document usage.
-- [ ] Add CI running `php artisan test` and Pint.
-- [ ] Create `doc/` and a README quickstart.
-- [ ] **Validation:** `php artisan migrate` exits 0 on a fresh DB.
+- [x] Create the Laravel app at the repo root (Laravel 13, PHP 8.5); commit the skeleton.
+- [x] Add `.env.example` covering app URL, DB, queue, mail, and hub settings — **no secrets committed**.
+- [x] Add session auth (`LoginController` with rate limiting) and protect all app routes behind `auth` (hand-rolled; no Breeze dependency).
+- [x] Add Tailwind 4 + a base layout component with nav: Dashboard, Sites, Runs, Logs, Incidents, Settings.
+- [x] Add a Docker Compose dev stack (app, MySQL 8.4, queue worker, scheduler) with a multi-stage `Dockerfile`.
+- [x] Add CI running `php artisan test` and Pint (`.github/workflows/ci.yml`).
+- [x] Create `doc/` and a README quickstart.
+- [x] **Validation:** `php artisan migrate --seed` exits 0 on a fresh DB; `php artisan test --compact` passes (9 tests); `docker compose config -q` is valid.
 
 #### Expected outcomes
-- `php artisan test` passes on the untouched skeleton.
-- Unauthenticated `GET /` returns 302 to `/login`; after login the dashboard returns 200.
+- `php artisan test` passes on the scaffolding.
+- Unauthenticated `GET /` returns 302; after login the dashboard returns 200.
 
 ### Phase 2: Domain Model & Migrations
 

@@ -1,6 +1,7 @@
 # agent.md — cron-shim hub
 
 Repo guide for AI agents (and humans) working on `cron-shim`. Read this before changing code.
+Laravel Boost's framework guidelines live in [`AGENTS.md`](./AGENTS.md); this file is the project guide.
 
 ## What this repo is
 
@@ -100,7 +101,7 @@ Load and apply the relevant skills before writing the surface:
 ├── resources/views/          # Blade + Tailwind
 ├── routes/                   # web.php, api.php, console.php
 ├── shim/                     # site-side reporting client + its tests
-├── tests/                    # Pest feature + unit tests
+├── tests/                    # PHPUnit feature + unit tests
 ├── docker-compose.yml
 ├── plan.md                   # roadmap
 └── agent.md                  # this file
@@ -128,7 +129,7 @@ docker compose up -d
 ## Testing
 
 ```bash
-php artisan test                 # full suite (Pest)
+php artisan test                 # full suite (PHPUnit)
 php artisan test --filter=Ingest # focused
 composer audit                   # dependency advisories
 ```

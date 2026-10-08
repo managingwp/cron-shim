@@ -1,0 +1,70 @@
+# Local development stack for the cron-shim hub.
+#
+#   docker compose up -d --build
+#   docker compose exec app php artisan migrate --seed
+#
+# The application is served on http://localhost:8000. MySQL is exposed on 3306.
+
+x-app: &app
+  build:
+    context: .
+  environment: &app-env
+    APP_ENV: local
+    APP_DEBUG: "true"
+    APP_URL: http://localhost:8000
+    # Dev-only key. Generate your own with `php artisan key:generate --show`.
+    APP_KEY: base64:ZGV2LW9ubHkta2V5LXJlcGxhY2UtbWUtMDAwMDAwMDA=
+    DB_CONNECTION: mysql
+    DB_HOST: db
+    DB_PORT: "3306"
+    DB_DATABASE: cronshim
+    DB_USERNAME: cronshim
+    DB_PASSWORD: secret
+    QUEUE_CONNECTION: database
+    CACHE_STORE: database
+    SESSION_DRIVER: database
+    MAIL_MAILER: log
+
+services:
+  app:
+    <<: *app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
+
+  queue:
+    <<: *app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: php artisan queue:work --tries=3 --backoff=5
+
+  scheduler:
+    <<: *app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: php artisan schedule:work
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: cronshim
+      MYSQL_USER: cronshim
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  dbdata:
