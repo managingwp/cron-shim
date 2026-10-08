@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\RunController;
+use App\Http\Controllers\Settings\NotificationChannelController;
 use App\Http\Controllers\SiteController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,4 +32,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/incidents', [IncidentController::class, 'index'])->name('incidents.index');
     Route::post('/incidents/{incident}/resolve', [IncidentController::class, 'resolve'])->name('incidents.resolve');
     Route::post('/incidents/{incident}/acknowledge', [IncidentController::class, 'acknowledge'])->name('incidents.acknowledge');
+
+    Route::get('/settings', [NotificationChannelController::class, 'index'])->name('settings.index');
+    Route::post('/settings/channels', [NotificationChannelController::class, 'store'])->name('settings.channels.store');
+    Route::delete('/settings/channels/{channel}', [NotificationChannelController::class, 'destroy'])->name('settings.channels.destroy');
+    Route::post('/settings/channels/{channel}/test', [NotificationChannelController::class, 'test'])->name('settings.channels.test');
 });

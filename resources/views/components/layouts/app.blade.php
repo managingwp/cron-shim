@@ -24,7 +24,7 @@
                             ['route' => 'runs.index', 'label' => 'Runs'],
                             ['route' => 'logs.index', 'label' => 'Logs'],
                             ['route' => 'incidents.index', 'label' => 'Incidents'],
-                            ['route' => 'settings.edit', 'label' => 'Settings'],
+                            ['route' => 'settings.index', 'label' => 'Settings'],
                         ] as $item)
                             @if (\Illuminate\Support\Facades\Route::has($item['route']))
                                 <a href="{{ route($item['route']) }}"

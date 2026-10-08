@@ -13,6 +13,8 @@ use App\Models\Site;
 
 class HealthEvaluator
 {
+    public function __construct(private IncidentNotifier $notifier) {}
+
     /**
      * Open a missed-run incident when an active site has fallen silent.
      */
@@ -75,12 +77,16 @@ class HealthEvaluator
             return $existing;
         }
 
-        return $site->incidents()->create([
+        $incident = $site->incidents()->create([
             'type' => $type,
             'status' => IncidentStatus::Open,
             'opened_at' => now(),
             'details' => $details,
         ]);
+
+        $this->notifier->notify($incident, $type === IncidentType::RepeatedFailure ? 'escalated' : 'opened');
+
+        return $incident;
     }
 
     /**
@@ -97,6 +103,8 @@ class HealthEvaluator
                 'status' => IncidentStatus::Resolved,
                 'resolved_at' => now(),
             ]);
+
+            $this->notifier->notify($incident, 'recovered');
         }
 
         return $open->count();
