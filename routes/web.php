@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\LogController;
+use App\Http\Controllers\RunController;
 use App\Http\Controllers\SiteController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,4 +22,8 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('sites', SiteController::class);
     Route::post('/sites/{site}/rotate', [SiteController::class, 'rotate'])->name('sites.rotate');
     Route::post('/sites/{site}/toggle', [SiteController::class, 'toggle'])->name('sites.toggle');
+
+    Route::get('/runs', [RunController::class, 'index'])->name('runs.index');
+    Route::get('/runs/{run}', [RunController::class, 'show'])->name('runs.show');
+    Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
 });

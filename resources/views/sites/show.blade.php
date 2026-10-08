@@ -73,5 +73,46 @@ SHIM_SECRET="{{ session('credentials')['secret'] }}"</pre>
                 @endif
             </dl>
         </div>
+
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-xl border border-white/10 bg-slate-900/60">
+                <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                    <h2 class="text-sm font-semibold text-slate-200">Recent runs</h2>
+                    <a href="{{ route('runs.index', ['site' => $site->id]) }}" class="text-xs text-emerald-300 hover:underline">View all</a>
+                </div>
+                <div class="divide-y divide-white/10">
+                    @forelse ($site->runs as $run)
+                        <div class="flex items-center justify-between px-4 py-3 text-sm">
+                            <div class="flex items-center gap-3">
+                                <x-status-badge :status="$run->status" />
+                                <a href="{{ route('runs.show', $run) }}" class="text-slate-300 hover:text-white">{{ $run->started_at?->diffForHumans() ?? '—' }}</a>
+                            </div>
+                            <span class="text-xs text-slate-500">{{ number_format((int) $run->duration_ms) }} ms</span>
+                        </div>
+                    @empty
+                        <div class="px-4 py-8 text-center text-sm text-slate-400">No runs reported yet.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-white/10 bg-slate-900/60">
+                <div class="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                    <h2 class="text-sm font-semibold text-slate-200">Open incidents</h2>
+                    @if (\Illuminate\Support\Facades\Route::has('incidents.index'))
+                        <a href="{{ route('incidents.index', ['site' => $site->id]) }}" class="text-xs text-emerald-300 hover:underline">View all</a>
+                    @endif
+                </div>
+                <div class="divide-y divide-white/10">
+                    @forelse ($openIncidents as $incident)
+                        <div class="flex items-center justify-between px-4 py-3 text-sm">
+                            <span class="text-slate-200">{{ $incident->type->label() }}</span>
+                            <span class="text-xs text-slate-500">since {{ $incident->opened_at->diffForHumans() }}</span>
+                        </div>
+                    @empty
+                        <div class="px-4 py-8 text-center text-sm text-slate-400">No open incidents.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
     </div>
 </x-layouts.app>

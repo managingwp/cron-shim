@@ -77,8 +77,10 @@ class SiteController extends Controller
         $this->authorize('view', $site);
 
         $site->loadCount(['runs', 'incidents']);
+        $site->load(['runs' => fn ($query) => $query->latest('started_at')->limit(10)]);
+        $openIncidents = $site->incidents()->open()->latest('opened_at')->limit(10)->get();
 
-        return view('sites.show', compact('site'));
+        return view('sites.show', compact('site', 'openIncidents'));
     }
 
     public function edit(Site $site): View
