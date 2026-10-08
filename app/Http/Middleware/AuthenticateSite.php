@@ -8,6 +8,7 @@ use App\Models\Site;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateSite
@@ -20,37 +21,47 @@ class AuthenticateSite
         $maxKb = (int) config('cronshim.ingest.max_body_kb');
 
         if ($maxKb > 0 && strlen($request->getContent()) > $maxKb * 1024) {
-            return response()->json(['message' => 'Payload too large.'], Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
+            return $this->reject($request, 'Payload too large.', Response::HTTP_REQUEST_ENTITY_TOO_LARGE);
         }
 
         $uuid = $request->header('X-Shim-Site');
         $token = $request->bearerToken();
 
         if (empty($uuid) || empty($token)) {
-            return response()->json(['message' => 'Missing site credentials.'], Response::HTTP_UNAUTHORIZED);
+            return $this->reject($request, 'Missing site credentials.', Response::HTTP_UNAUTHORIZED);
         }
 
         $site = Site::query()->where('uuid', $uuid)->first();
 
         if ($site === null) {
-            return response()->json(['message' => 'Unknown site.'], Response::HTTP_UNAUTHORIZED);
+            return $this->reject($request, 'Unknown site.', Response::HTTP_UNAUTHORIZED, (string) $uuid);
         }
 
         if (! $site->is_active) {
-            return response()->json(['message' => 'Site is disabled.'], Response::HTTP_FORBIDDEN);
+            return $this->reject($request, 'Site is disabled.', Response::HTTP_FORBIDDEN, $site->uuid);
         }
 
         if (! Hash::check($token, $site->ingest_token_hash)) {
-            return response()->json(['message' => 'Invalid token.'], Response::HTTP_UNAUTHORIZED);
+            return $this->reject($request, 'Invalid token.', Response::HTTP_UNAUTHORIZED, $site->uuid);
         }
 
         if (! $this->signatureIsValid($request, $site)) {
-            return response()->json(['message' => 'Invalid signature.'], Response::HTTP_UNAUTHORIZED);
+            return $this->reject($request, 'Invalid signature.', Response::HTTP_UNAUTHORIZED, $site->uuid);
         }
 
         $request->attributes->set('site', $site);
 
         return $next($request);
+    }
+
+    private function reject(Request $request, string $message, int $status, ?string $uuid = null): Response
+    {
+        Log::warning('Ingest rejected: '.$message, [
+            'ip' => $request->ip(),
+            'site_uuid' => $uuid,
+        ]);
+
+        return response()->json(['message' => $message], $status);
     }
 
     /**

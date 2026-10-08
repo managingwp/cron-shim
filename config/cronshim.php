@@ -20,6 +20,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | HTTPS
+    |--------------------------------------------------------------------------
+    |
+    | When true, all generated URLs use the https scheme (set this when TLS is
+    | terminated by an upstream proxy and the app cannot detect it directly).
+    |
+    */
+    'force_https' => (bool) env('CRONSHIM_FORCE_HTTPS', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Ingest API
     |--------------------------------------------------------------------------
     |

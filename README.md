@@ -50,6 +50,7 @@ The app is served on http://localhost:8000 with MySQL, a queue worker, and the s
 - [`agent.md`](./agent.md) — contributor/agent guide and project conventions.
 - [`doc/api-ingest.md`](./doc/api-ingest.md) — ingest API contract.
 - [`doc/development.md`](./doc/development.md) — local development, testing, and operations.
+- [`doc/runbook.md`](./doc/runbook.md) — production deployment, backups, and retention.
 
 ## License
 

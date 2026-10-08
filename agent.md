@@ -18,8 +18,8 @@ Two parts:
 
 ## Current state
 
-The repo is a scaffold. `README.md` is a stub and `plan.md` is the roadmap. There is no application
-code yet — Phase 1 of `plan.md` creates it. Do not assume files, classes, or routes exist; check first.
+The hub is **implemented** — see [`plan.md`](./plan.md) for the phase history and status. The Laravel
+application lives at the repo root; the site-side client lives in `shim/`.
 
 ## Mandatory workflow
 
@@ -84,26 +84,27 @@ Load and apply the relevant skills before writing the surface:
 
 ```
 .
-├── app/                      # Laravel hub
+├── app/                      # Laravel hub (Laravel 13 / PHP 8.5)
 │   ├── Console/Commands/     # EvaluateSiteHealth, PruneOldData
+│   ├── Enums/                # RunStatus, IncidentType, IncidentStatus, LogLevel, NotificationChannelType
 │   ├── Http/
-│   │   ├── Controllers/
-│   │   ├── Middleware/       # site auth for ingest
-│   │   └── Requests/         # IngestReportRequest, ...
-│   ├── Livewire/             # Dashboard, Sites, Runs, Logs, Incidents, Settings
-│   ├── Models/               # Site, CronRun, CronLogEntry, Incident, ...
-│   ├── Notifications/
-│   ├── Policies/
-│   └── Services/             # IngestService, HealthEvaluator, Notifier
-├── config/
-├── database/                 # migrations, factories, seeders
-├── doc/                      # api-ingest.md, runbooks, deployment notes
-├── resources/views/          # Blade + Tailwind
-├── routes/                   # web.php, api.php, console.php
-├── shim/                     # site-side reporting client + its tests
+│   │   ├── Controllers/      # Site, Run, Log, Incident, Settings, Api\Ingest
+│   │   ├── Middleware/       # AuthenticateSite (ingest), SecurityHeaders
+│   │   └── Requests/         # IngestReportRequest, Store/UpdateSiteRequest
+│   ├── Jobs/                 # SendIncidentNotification
+│   ├── Livewire/             # Dashboard (polling)
+│   ├── Models/               # Site, CronRun, CronLogEntry, Incident, NotificationChannel, NotificationLog
+│   ├── Policies/             # SitePolicy
+│   └── Services/             # IngestService, HealthEvaluator, IncidentNotifier, NotificationSender
+├── config/cronshim.php       # hub tunables
+├── database/                 # migrations, factories, seeders (Admin, Demo)
+├── doc/                      # api-ingest.md, development.md, runbook.md
+├── resources/views/          # Blade + Tailwind 4 (layouts/, sites/, runs/, logs/, incidents/, settings/, livewire/)
+├── routes/                   # web.php, api.php, console.php (schedule)
+├── shim/                     # site-side client (cron-shim.php + docs)
 ├── tests/                    # PHPUnit feature + unit tests
-├── docker-compose.yml
-├── plan.md                   # roadmap
+├── docker-compose.yml, Dockerfile
+├── plan.md                   # roadmap (implemented)
 └── agent.md                  # this file
 ```
 
