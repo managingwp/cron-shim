@@ -28,3 +28,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+.port
+.tunnel-url
+.tunnel.pid
+.tunnel.pid.log

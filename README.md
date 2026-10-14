@@ -37,12 +37,26 @@ Log in at http://localhost:8000 with the seeded administrator, then change the p
 
 ### Docker
 
+The stack is managed through the auto-detecting `control.sh` (Laravel, Compose v2):
+
+```bash
+./control.sh create          # .env + secrets, then start (with migrate)
+./control.sh status          # container + version status
+./control.sh logs            # tail the app log (or: logs <service>)
+./control.sh rebuild         # git pull + rebuild images + recreate
+./control.sh reset           # DESTRUCTIVE wipe, then fresh setup
+```
+
+`./control.sh help` lists every command, including Cloudflare `tunnel` subcommands.
+The app is served on http://localhost:8000 (host port = `APP_PORT`) with MySQL, a
+queue worker, and the scheduler.
+
+Driving Compose directly still works:
+
 ```bash
 docker compose up -d --build
 docker compose exec app php artisan migrate --seed
 ```
-
-The app is served on http://localhost:8000 with MySQL, a queue worker, and the scheduler.
 
 ## Documentation
 

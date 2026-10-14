@@ -1,9 +1,12 @@
 # Local development stack for the cron-shim hub.
 #
-#   docker compose up -d --build
+#   ./control.sh create            # recommended: .env, secrets, migrate, start
+#   docker compose up -d --build   # or drive Compose directly
 #   docker compose exec app php artisan migrate --seed
 #
-# The application is served on http://localhost:8000. MySQL is exposed on 3306.
+# The application is served on http://localhost:${APP_PORT:-8000}. MySQL is exposed
+# on 3306. A profile-gated cloudflared service is available via './control.sh tunnel'
+# (started with `docker compose --profile tunnel up -d cloudflared`).
 
 x-app: &app
   build:
@@ -29,7 +32,7 @@ services:
   app:
     <<: *app
     ports:
-      - "8000:8000"
+      - "${APP_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -48,6 +51,16 @@ services:
       db:
         condition: service_healthy
     command: php artisan schedule:work
+
+  # Expose the app over Cloudflare Tunnel. Profile-gated so a plain start/setup
+  # ignores it until './control.sh tunnel named' opts in (TUNNEL_TOKEN must exist).
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN:-}
+    restart: unless-stopped
+    profiles: [tunnel]
+    depends_on:
+      - app
 
   db:
     image: mysql:8.4
